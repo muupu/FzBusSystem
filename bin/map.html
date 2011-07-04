@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>显示地图</title>
+<script type="text/javascript" src="http://app.mapabc.com/apis?&t=ajaxmap&v=2.0&key=f6c97a7f64063cfee7c2dc2157847204d4dbf093146062b536a17d0461efe1fdf6348b0d3d1bb26d"></script>
+<script type="text/javascript">
+var mapObjSearch=null;
+function mapInit() {//地图初始化过程
+  var mapoption = new MMapOptions();
+  mapoption.toolbar=DEFAULT; //设置工具条
+  mapoption.overviewMap =DEFAULT; //设置鹰眼
+  mapoption.isCongruence=true;
+  mapObjSearch= new MMap("map",mapoption);
+  mapObjSearch.setZoomAndCenter(12,new MLngLat(119.31131746,26.074739));
+}
+var buslineidarr=new Array();//用于记录公交线路id的数组
+var citycode_routSearchByBusLineName=null;//用于记录citycode
+var mrs;//用于添加站点的Marker;
+function routSearchByBusLineName(citycode,linename) {
+  var option=new MRoutSearchOptions();
+   option.routeType=1;
+   option.resultType=0;     
+   citycode_routSearchByBusLineName = citycode;
+  var mrs = new MRoutSearch();
+   mrs.setCallbackFunction(myfunc5); 
+   mrs.routSearchByBusLineName(linename,citycode,option);
+}
+function myfunc5(data) {
+  var arr = new Array();
+  var rs = data;
+  var temp =null;
+  buslineidarr.length=0;
+  //返回结果是分析JSON对象里的值
+ if(rs.list.length != 0){
+   buslineidarr.push(rs.list[0].line_id);
+   getAllBusStations2(rs.list[0].line_id);
+  }
+}
+function getAllBusStations2(lineid)  { 
+  var option= new MRoutSearchOptions();
+  mrs = new MRoutSearch();
+  option.resultType=1;
+  mrs.setCallbackFunction(myfunc14);
+  mrs.routSearchByBusLineID(lineid,citycode_routSearchByBusLineName,option);	
+ }
+ 
+function myfunc14(data) {
+  mapObjSearch.removeAllOverlays();
+  var rs = data;
+  var splitarr;
+  var pointarr=new Array();
+  var linearr=new Array();	
+  for(var i=0;i<data.list.length;i++) {
+   splitarr = mrs.getAllBusStations(data.list[i].stationdes,0);
+  }	
+  for(var a=0;a<splitarr.length;a++) {    
+   var aa=splitarr[a].split(';');   
+   for (var k=0;k<aa.length;k+=4) {
+    var pointid;   
+    var pointStyle = new MMarkerOptions();   
+    var tipOption = new MTipOptions();   
+    tipOption.title=a+1+" "+aa[k];   
+    tipOption.content="站名："+aa[k]+"  站点号："+aa[k+3];   
+    var mfillstyle=new MFillStyle();  //定义填充类   
+    mfillstyle.color=0x0066FF;   
+    mfillstyle.alpha = 1;   
+    tipOption.titleFillStyle = mfillstyle;   
+    var linestyle = new MLineStyle();   
+    linestyle.thickness = 3;    
+    linestyle.color = 0x000000;   
+    linestyle.alpha = 1;   
+    tipOption.borderStyle = linestyle;   
+    pointStyle.tipOption = tipOption;     
+    pointStyle.imageUrl ="http://www.mapabc.com/images/point.png";
+    pointStyle.canShowTip=true;
+    var ll=new MLngLat(aa[k+1],aa[k+2]);   
+    linearr.push(ll);   
+    pointsearch =  new MMarker(ll,pointStyle);   
+    pointarr.push(pointsearch);    
+     }
+   }
+	var lineOpt=new MLineOptions();
+	lineOpt.lineStyle.thickness = 3;
+    lineOpt.lineStyle.color = 0xFF3398;
+    var PolylineAPI = new MPolyline(linearr,lineOpt);   
+    mapObjSearch.addOverlay(PolylineAPI);      
+    mapObjSearch.addOverlays(pointarr,true);       
+    mapObjSearch.setZoomLevel(12);  
+}
+</script>
+</head>
+<body onload="mapInit();" style="margin: 0px">
+<div id="map" style="overflow: hidden; width: 598px; height: 416px"></div>
+</body>
+</html>
